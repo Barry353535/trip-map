@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACCEL INTERNATIONAL - China Business Trip</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBi6bkRKKYlHJg3YnsLSVR35ex8y71jH3g&libraries=places,geometry"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background:    #1a1a2e;
+            color: #fff;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            height: 100vh;
+        }
+
+        @media (max-width: 1000px) {
+            .container {
+                grid-template-columns:     1fr;
+                grid-template-rows: 60vh 40vh;
+            }
+        }
+
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 380px;
+            z-index: 100;
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, transparent 100%);
+            padding: 20px 30px;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1000px) {
+            .header { right: 0; }
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #8892a0;
+            font-size:  0.9rem;
+            margin-top: 5px;
+        }
+
+        .    map-section {
+            position: relative;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height:    100%;
+            background: #e0e0e0;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index:    100;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .  btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: rgba(255,255,255,0.95);
+            color: #1a1a2e;
+        }
+
+        . btn: hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0,0,0,0.4);
+        }
+
+        .legend {
+            position: absolute;
+            top: 85px;
+            left: 20px;
+            background: rgba(0,0,0,0.9);
+            padding: 15px 18px;
+            border-radius:    12px;
+            z-index: 100;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .legend-title {
+            font-size: 0.85rem;
+            color: #fff;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin:    8px 0;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .   legend-line {
+            width: 30px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .legend-start { background: #9C27B0; }
+        .  legend-flight { background: #00d4ff; }
+        . legend-ground { background: #00ff88; }
+        .legend-train { background: #ff6b6b; }
+
+        .  info-box {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform:    translateX(-50%);
+            background: rgba(0,0,0,0.95);
+            padding: 15px 20px;
+            border-radius:    12px;
+            min-width: 350px;
+            z-index:    100;
+            border: 1px solid rgba(0,212,255,0.4);
+            display: none;
+        }
+
+        . info-box.show { display: block; }
+
+        .   info-box h3 {
+            color: #00d4ff;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .  info-box p {
+            color: #8892a0;
+            font-size: 0.85rem;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #12192a 0%, #0d1320 100%);
+            overflow-y: auto;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header {
+            padding: 22px 18px;
+            border-bottom:    1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            background: #12192a;
+            z-index: 10;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 18px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .stat {
+            text-align: center;
+            padding: 10px 5px;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight:    700;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #8892a0;
+            margin-top: 3px;
+        }
+
+        .   day-list { padding: 12px; }
+
+        .day-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid rgba(0,212,255,0.3);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .day-card:hover {
+            background: rgba(255,255,255,0.06);
+        }
+
+        .day-card.   active {
+            border-left-color: #00ff88;
+            background: rgba(0,255,136,0.08);
+        }
+
+        .day-header {
+            padding: 15px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .day-num {
+            font-weight: 700;
+            font-size: 1.05rem;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .day-title {
+            font-size: 0.85rem;
+            color: #8892a0;
+            margin-top: 2px;
+        }
+
+        .   day-toggle {
+            color: #8892a0;
+            transition: transform 0.3s;
+        }
+
+        .  day-card.open .  day-toggle {
+            transform:   rotate(180deg);
+        }
+
+        .day-content {
+            max-height: 0;
+            overflow:    hidden;
+            transition: max-height 0.3s;
+        }
+
+        .day-card.open .day-content {
+            max-height: 500px;
+        }
+
+        .   location-list {
+            list-style: none;
+            padding: 0 14px 14px;
+        }
+
+        .  location-item {
+            padding:   12px;
+            margin:   6px 0;
+            background:    rgba(255,255,255,0.03);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        . location-item:hover {
+            background: rgba(0,212,255,0.15);
+            transform: translateX(5px);
+        }
+
+        .  loc-icon { font-size: 1.2rem; }
+        . loc-name { flex:   1; color: #ddd; }
+        .loc-arrow {
+            color: #00d4ff;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .location-item: hover .loc-arrow {
+            opacity: 1;
+        }
+
+        .sidebar:   :-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0,212,255,0.4);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="map-section">
+            <div class="header">
+                <h1>🌏 ACCEL INTERNATIONAL</h1>
+                <p>China Business Trip Route Map</p>
+            </div>
+
+            <div class="legend">
+                <div class="legend-title">🚀 ROUTES</div>
+                <div class="legend-item">
+                    <div class="legend-line legend-start"></div>
+                    <span>🏙️ Departure</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line legend-flight"></div>
+                    <span>✈️ Flight</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line legend-ground"></div>
+                    <span>🚗 Ground</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line legend-train"></div>
+                    <span>🚄 HSR</span>
+                </div>
+            </div>
+
+            <div id="map"></div>
+
+            <div class="info-box" id="infoBox">
+                <h3 id="infoTitle">Location</h3>
+                <p id="infoCoords">Coordinates</p>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="addMarkers()">📍 Show All Locations</button>
+                <button class="btn" onclick="resetMap()">🏠 Reset View</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>📅 Trip Itinerary</h2>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">7</div>
+                    <div class="stat-label">Days</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">8+</div>
+                    <div class="stat-label">Suppliers</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">~29K</div>
+                    <div class="stat-label">km</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">Cities</div>
+                </div>
+            </div>
+
+            <div class="day-list">
+                <div class="day-card open" id="day0">
+                    <div class="day-header" onclick="toggleDay('day0')">
+                        <div>
+                            <div class="day-num">Departure</div>
+                            <div class="day-title">New York Departure</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(40.6413, -73.7781, 'New York Kennedy Airport', 'day0')">
+                                <span class="loc-icon">🗽</span>
+                                <span class="loc-name">JFK Airport - New York</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(40.7580, -73.9855, 'Times Square', 'day0')">
+                                <span class="loc-icon">🌆</span>
+                                <span class="loc-name">Times Square</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="day-card" id="day1">
+                    <div class="day-header" onclick="toggleDay('day1')">
+                        <div>
+                            <div class="day-num">Day 1</div>
+                            <div class="day-title">Arrival in Shanghai</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(31.1443, 121.8083, 'Shanghai Pudong Airport', 'day1')">
+                                <span class="loc-icon">✈️</span>
+                                <span class="loc-name">Shanghai Pudong Airport (PVG)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.24, 121.49, 'The Bund', 'day1')">
+                                <span class="loc-icon">🌃</span>
+                                <span class="loc-name">The Bund</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.2354, 121.4747, 'Nanjing Road', 'day1')">
+                                <span class="loc-icon">🛍️</span>
+                                <span class="loc-name">Nanjing Road</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.2194, 121.4728, 'Xintiandi', 'day1')">
+                                <span class="loc-icon">🏮</span>
+                                <span class="loc-name">Xintiandi</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="day-card" id="day2">
+                    <div class="day-header" onclick="toggleDay('day2')">
+                        <div>
+                            <div class="day-num">Day 2</div>
+                            <div class="day-title">Shanghai Suppliers</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(31.20, 121.45, 'Supplier A', 'day2')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier A</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.18, 121.52, 'Supplier B', 'day2')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier B</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="day-card" id="day3">
+                    <div class="day-header" onclick="toggleDay('day3')">
+                        <div>
+                            <div class="day-num">Day 3</div>
+                            <div class="day-title">Yangtze Delta</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(31.2989, 120.5853, 'Suzhou', 'day3')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier C (Suzhou)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.3847, 120.9576, 'Kunshan', 'day3')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier D (Kunshan)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="day-card" id="day4">
+                    <div class="day-header" onclick="toggleDay('day4')">
+                        <div>
+                            <div class="day-num">Day 4</div>
+                            <div class="day-title">Finewire Company (常州)</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(31.78, 120.32, 'Finewire Company HQ', 'day4')">
+                                <span class="loc-icon">🏢</span>
+                                <span class="loc-name">Finewire Company (Changzhou)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.75, 120.35, 'Supplier E', 'day4')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier E (Changzhou)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.82, 120.28, 'Supplier F', 'day4')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier F (Changzhou)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="day-card" id="day5">
+                    <div class="day-header" onclick="toggleDay('day5')">
+                        <div>
+                            <div class="day-num">Day 5</div>
+                            <div class="day-title">Transfer to Beijing</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(31.72, 120.32, 'Supplier G', 'day5')">
+                                <span class="loc-icon">🏭</span>
+                                <span class="loc-name">Supplier G (Changzhou)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(31.1949, 121.32, 'Shanghai Hongqiao Station', 'day5')">
+                                <span class="loc-icon">🚄</span>
+                                <span class="loc-name">Shanghai Hongqiao Station</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(39.8987, 116.3783, 'Beijing South Station', 'day5')">
+                                <span class="loc-icon">🚄</span>
+                                <span class="loc-name">Beijing South Station</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="day-card" id="day6">
+                    <div class="day-header" onclick="toggleDay('day6')">
+                        <div>
+                            <div class="day-num">Day 6</div>
+                            <div class="day-title">Cultural & Departure</div>
+                        </div>
+                        <span class="day-toggle">▼</span>
+                    </div>
+                    <div class="day-content">
+                        <ul class="location-list">
+                            <li class="location-item" onclick="focusLocation(40.4319, 116.5704, 'Great Wall', 'day6')">
+                                <span class="loc-icon">🏯</span>
+                                <span class="loc-name">Great Wall - Mutianyu</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(39.9163, 116.3972, 'Forbidden City', 'day6')">
+                                <span class="loc-icon">🏛️</span>
+                                <span class="loc-name">Forbidden City</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                            <li class="location-item" onclick="focusLocation(40.0799, 116.6031, 'Beijing Capital Airport', 'day6')">
+                                <span class="loc-icon">✈️</span>
+                                <span class="loc-name">Beijing Capital Airport (PEK)</span>
+                                <span class="loc-arrow">→</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var map;
+        var markers = [];
+
+        function initMap() {
+            map = new google.maps.Map(document. getElementById('map'), {
+                zoom: 3,
+                center: { lat:   20, lng: 110 }
+            });
+        }
+
+        function createMarkerIcon(color) {
+            return {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 12,
+                fillColor: '#' + color,
+                fillOpacity: 1,
+                strokeColor: '#fff',
+                strokeWeight: 2
+            };
+        }
+
+        function addMarkers() {
+            // 清除旧标记
+            markers.forEach(function(marker) {
+                marker.   setMap(null);
+            });
+            markers = [];
+
+            var locations = [
+                { name: '🗽 New York JFK', lat: 40.6413, lng: -73.7781, color: '9C27B0' },
+                { name: '🌆 Times Square', lat: 40.7580, lng: -73.9855, color: '9C27B0' },
+                { name:   '✈️ Shanghai Pudong', lat: 31.1443, lng: 121.8083, color: 'FF6B6B' },
+                { name: '🌃 The Bund', lat: 31.24, lng: 121.49, color: '00D4FF' },
+                { name: '🛍️ Nanjing Road', lat: 31.2354, lng: 121.4747, color: '00FF88' },
+                { name:    '🏮 Xintiandi', lat: 31.2194, lng: 121.4728, color: 'FFD700' },
+                { name:    '🏭 Supplier A', lat: 31.20, lng: 121.45, color: '00FF88' },
+                { name:  '🏭 Supplier B', lat:    31.18, lng: 121.52, color: '00FF88' },
+                { name:   '🏭 Suzhou', lat: 31.2989, lng: 120.5853, color: '00FF88' },
+                { name:  '🏭 Kunshan', lat: 31.3847, lng: 120.9576, color: '00FF88' },
+                { name: '🏢 Finewire', lat: 31.78, lng: 120.32, color: 'FFD700' },
+                { name: '🏭 Supplier E', lat: 31.75, lng: 120.35, color: '00FF88' },
+                { name: '🏭 Supplier F', lat:  31.82, lng: 120.28, color: '00FF88' },
+                { name:    '🏭 Supplier G', lat: 31.72, lng: 120.32, color: '00FF88' },
+                { name:  '🚄 Hongqiao', lat: 31.1949, lng: 121.32, color: 'FF6B6B' },
+                { name: '🚄 Beijing South', lat: 39.8987, lng: 116.3783, color: 'FF6B6B' },
+                { name: '🏯 Great Wall', lat: 40.4319, lng: 116.5704, color: 'FF9F43' },
+                { name: '🏛️ Forbidden City', lat: 39.9163, lng: 116.3972, color: '00D4FF' },
+                { name: '✈️ Beijing Capital', lat: 40.0799, lng: 116.6031, color: 'FF6B6B' }
+            ];
+
+            locations.forEach(function(location) {
+                var marker = new google.maps.  Marker({
+                    position:    { lat: location.lat, lng: location.lng },
+                    map:  map,
+                    title: location.name,
+                    icon: createMarkerIcon(location.color)
+                });
+
+                // 点击圆点时对焦该位置
+                marker.addListener('click', function() {
+                    focusLocation(location. lat, location.lng, location.name, '');
+                });
+
+                markers.push(marker);
+            });
+
+            // 自动调整视图以显示所有标记
+            var bounds = new google.maps.  LatLngBounds();
+            markers.forEach(function(marker) {
+                bounds.extend(marker.getPosition());
+            });
+            map.fitBounds(bounds);
+        }
+
+        function focusLocation(lat, lng, name, dayId) {
+            // 对焦到该位置，缩放级别为 15
+            map.setZoom(15);
+            map.panTo({lat: lat, lng: lng});
+            
+            // 显示信息框
+            showLocation(name, lat + ', ' + lng, dayId);
+        }
+
+        function toggleDay(id) {
+            var card = document.getElementById(id);
+            card.classList.toggle('open');
+        }
+
+        function showLocation(name, coords, dayId) {
+            document.getElementById('infoTitle').textContent = name;
+            document.getElementById('infoCoords').textContent = 'Lat/Lng: ' + coords;
+            document.getElementById('infoBox').classList.add('show');
+
+            if (dayId) {
+                var allCards = document.querySelectorAll('div.  day-card');
+                for (var i = 0; i < allCards.length; i++) {
+                    allCards[i].classList.remove('active');
+                }
+                document.   getElementById(dayId).classList.add('active');
+            }
+
+            setTimeout(function() {
+                document.   getElementById('infoBox').classList.remove('show');
+            }, 3000);
+        }
+
+        function resetMap() {
+            map.setCenter({ lat: 20, lng: 110 });
+            map.setZoom(3);
+        }
+
+        window.addEventListener('load', function() {
+            initMap();
+            addMarkers();
+        });
+    </script>
+</body>
+</html>
